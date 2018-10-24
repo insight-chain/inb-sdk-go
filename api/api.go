@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/insight-chain/inb-go/accounts/keystore"
 	"github.com/insight-chain/inb-go/common"
+	"github.com/insight-chain/inb-go/common/hexutil"
 	"github.com/insight-chain/inb-go/core/state"
 	"github.com/insight-chain/inb-go/core/types"
 	"github.com/insight-chain/inb-go/crypto"
@@ -168,9 +169,56 @@ func Ordinary(privateKey, fromAddress, toAddress string, value int) (string, err
 		log.Fatal(err)
 		return "", err
 	}
+	fmt.Println("tx.Data:", tx.Data())
 	txHash, err := Client.SdkSendTransaction(tx)
 	if err != nil {
 		log.Fatal(err)
+	}
+	return txHash, nil
+}
+
+//create a raw transaction
+func NewRawTransaction(privKey, fromAddress, toAddress, resourcePayer string, value int) (string, error) {
+	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
+	if err != nil {
+		log.Fatal(err)
+		return "", err
+	}
+	amount := big.NewInt(int64(value))
+	chainID, err := Client.NetworkID(context.Background())
+	if err != nil {
+		log.Fatal(err)
+		return "", err
+	}
+	data := ""
+	txType = 1
+	tx, err := Client.NewRawTx(chainID, nonce, privKey, toAddress, resourcePayer, amount, data, txType)
+	if err != nil {
+		log.Fatal(err)
+		return "", err
+	}
+	return tx, nil
+}
+
+//Sign a payment transaction
+func SignPaymentTransaction(rawTxHex string, resourcePayerPriv string) (hexutil.Bytes, error) {
+	chainID, err := Client.NetworkID(context.Background())
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	tx, err := Client.SignPaymentTx(chainID, rawTxHex, resourcePayerPriv)
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	return tx.Raw, nil
+}
+func SendRawTransaction(rawTx string) (string, error) {
+	txHash, err := Client.SendRawTx(rawTx)
+	if err != nil {
+		log.Fatal(err)
+		return "", err
 	}
 	return txHash, nil
 }

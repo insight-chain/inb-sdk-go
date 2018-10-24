@@ -31,6 +31,7 @@ import (
 	"github.com/insight-chain/inb-go/rlp"
 	"github.com/insight-chain/inb-go/rpc"
 
+	"encoding/hex"
 	"github.com/insight-chain/inb-go/core/state"
 	"github.com/insight-chain/inb-go/crypto"
 	"log"
@@ -74,6 +75,12 @@ type SdkHeader struct {
 	SpecialConsensus []byte           `json:"specialConsensus"  gencodec:"required"`
 	//VdposContext     *VdposContextProto `json:"vdposContext"     gencodec:"required"`
 	Hash common.Hash `json:"hash"`
+}
+
+//SignTransactionResult
+type SignTransactionResult struct {
+	Raw hexutil.Bytes      `json:"raw"`
+	Tx  *types.Transaction `json:"tx"`
 }
 
 // Dial connects a client to the given URL.
@@ -209,6 +216,94 @@ func (ec *Client) HeaderByHash(ctx context.Context, hash common.Hash) (*SdkHeade
 	return balance.String()
 }*/
 func (ec *Client) NewTransaction(chainId *big.Int, nonce uint64, priv string, to string, value *big.Int, data string, txtype types.TxType) (*types.Transaction, error) {
+	txdata := []byte(data)
+	var tx = new(types.Transaction)
+	if common.IsHexAddress(to) {
+		toaddr := common.HexToAddress(to)
+		tx = types.NewTransaction(nonce, toaddr, value, 0, txdata, txtype)
+	} else {
+		tx = types.NewNilToTransaction(nonce, value, 0, txdata, txtype)
+	}
+	key, err := crypto.HexToECDSA(priv)
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), key)
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	return signedTx, nil
+}
+
+//create a raw transaction
+func (ec *Client) NewRawTx(chainId *big.Int, nonce uint64, priv, to, resourcePayer string, value *big.Int, data string, txtype types.TxType) (string, error) {
+	txdata := []byte(data)
+	payment := common.HexToAddress(resourcePayer)
+	tx := types.NewTransaction4Payment(nonce, common.HexToAddress(to), value, 0, txdata, txtype, &payment)
+	privKey, err := crypto.HexToECDSA(priv)
+	if err != nil {
+		log.Fatal(err)
+		return "", err
+	}
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privKey)
+	ts := types.Transactions{signedTx}
+	rawTxBytes := ts.GetRlp(0)
+	rawTx := &types.Transaction{}
+	if err := rlp.DecodeBytes(rawTxBytes, rawTx); err != nil {
+		return "", err
+	}
+	rawTxHex := hex.EncodeToString(rawTxBytes)
+	//fmt.Println("rawTx_str:", hex.EncodeToString(rawTxBytes))
+	return rawTxHex, nil
+}
+
+//send signPayTX
+func (ec *Client) SignPaymentTx(chainId *big.Int, rawTxHex string, resourcePayerPriv string) (*SignTransactionResult, error) {
+	rawTxBytes, err := hex.DecodeString(rawTxHex)
+	tx := new(types.Transaction)
+	if err := rlp.DecodeBytes(rawTxBytes, tx); err != nil {
+		return nil, err
+	}
+	key, err := crypto.HexToECDSA(resourcePayerPriv)
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	//sign for rawTx.......
+	payTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), key)
+
+	if err != nil {
+		return nil, err
+	}
+	returnData, err := rlp.EncodeToBytes(payTx)
+	if err != nil {
+		return nil, err
+	}
+	return &SignTransactionResult{returnData, payTx}, nil
+}
+
+//send raw Transaction
+func (ec *Client) SendRawTx(rawTx string) (string, error) {
+	rawTxT := rawTx[2:]
+	rawTxBytes, err := hex.DecodeString(rawTxT)
+	if err != nil {
+		log.Fatal(err)
+		return "", err
+	}
+	tx := new(types.Transaction)
+	rlp.DecodeBytes(rawTxBytes, &tx)
+	err = ec.SendTransaction(context.Background(), tx)
+	if err != nil {
+		log.Fatal(err)
+		return "", err
+	}
+	return tx.Hash().Hex(), nil
+}
+
+//test rawTx
+func (ec *Client) RawTransaction(chainId *big.Int, nonce uint64, priv string, to string, value *big.Int, data string, txtype types.TxType) (*types.Transaction, error) {
 	txdata := []byte(data)
 	var tx = new(types.Transaction)
 	if common.IsHexAddress(to) {
