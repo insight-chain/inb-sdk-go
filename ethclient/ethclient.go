@@ -206,15 +206,6 @@ func (ec *Client) HeaderByHash(ctx context.Context, hash common.Hash) (*SdkHeade
 }
 
 // start by cq
-//get account balance
-/*func (ec *Client) GetBalance(address string) string {
-	toAddress := common.HexToAddress(address)
-	balance, err := ec.BalanceAt(context.Background(), toAddress, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return balance.String()
-}*/
 func (ec *Client) NewTransaction(chainId *big.Int, nonce uint64, priv string, to string, value *big.Int, data string, txtype types.TxType) (*types.Transaction, error) {
 	txdata := []byte(data)
 	var tx = new(types.Transaction)
@@ -237,6 +228,29 @@ func (ec *Client) NewTransaction(chainId *big.Int, nonce uint64, priv string, to
 	return signedTx, nil
 }
 
+/*//special Transaction for receive ReceiveLockedAward
+func (ec *Client) NewTransactionForRLA(chainId *big.Int, nonce uint64, priv string, to string, value *big.Int, data string, txtype types.TxType) (*types.Transaction, error) {
+	//txdata := []byte(data)
+	var tx = new(types.Transaction)
+	if common.IsHexAddress(to) {
+		toaddr := common.HexToAddress(to)
+		tx = types.NewTransaction(nonce, toaddr, value, 0, data, txtype)
+	} else {
+		tx = types.NewNilToTransaction(nonce, value, 0, data, txtype)
+	}
+	key, err := crypto.HexToECDSA(priv)
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), key)
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	return signedTx, nil
+}*/
+
 //create a raw transaction
 func (ec *Client) NewRawTx(chainId *big.Int, nonce uint64, priv, to, resourcePayer string, value *big.Int, data string, txtype types.TxType) (string, error) {
 	txdata := []byte(data)
@@ -255,7 +269,6 @@ func (ec *Client) NewRawTx(chainId *big.Int, nonce uint64, priv, to, resourcePay
 		return "", err
 	}
 	rawTxHex := hex.EncodeToString(rawTxBytes)
-	//fmt.Println("rawTx_str:", hex.EncodeToString(rawTxBytes))
 	return rawTxHex, nil
 }
 

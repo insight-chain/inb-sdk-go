@@ -1,5 +1,5 @@
 {
-  "url": "http://192.168.1.127:6001",
+  "url": "http://54.254.215.214:6001",
   "privateKeyFile": "/home/GO_PATH/src/github.com/insight-chain/data5/keystore/UTC--2019-10-23T08-38-18.294495121Z--957370d3a7a3ffb3df1afd67f0078dce8f96873c",
   "password" : "1"
 }
