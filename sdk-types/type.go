@@ -6,9 +6,7 @@ import (
 )
 
 type Configure struct {
-	Url            string `json:"url"`
-	PrivateKeyFile string `json:"privateKeyFile"`
-	Password       string `json:"password"`
+	Url string `json:"url"`
 }
 
 type Account struct {
