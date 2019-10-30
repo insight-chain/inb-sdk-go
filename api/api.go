@@ -69,7 +69,7 @@ func InitConfig() *sdk_types.Configure {
 	return &conf
 }
 
-//Read the configuration file and convert the json file in the keystore into a private key.
+/*//Read the configuration file and convert the json file in the keystore into a private key.
 func KeystoreToPrivateKey(conf *sdk_types.Configure) (string, string, error) {
 	keyjson, err := ioutil.ReadFile(conf.PrivateKeyFile)
 	if err != nil {
@@ -85,13 +85,13 @@ func KeystoreToPrivateKey(conf *sdk_types.Configure) (string, string, error) {
 	privKey := hex.EncodeToString(unlockedKey.PrivateKey.D.Bytes())
 	addr := crypto.PubkeyToAddress(unlockedKey.PrivateKey.PublicKey)
 	return privKey, addr.String(), nil
-}
+}*/
 
 //Get privateKey by parameters
 func KeystoreToPrivateKey2(privateKeyFile, password string) (string, string, error) {
 	keyjson, err := ioutil.ReadFile(privateKeyFile)
 	if err != nil {
-		fmt.Println("读取keyjson失败：", err)
+		fmt.Println("read keyjson file failed：", err)
 	}
 	unlockedKey, err := keystore.DecryptKey(keyjson, password)
 
@@ -133,7 +133,7 @@ func KeystoreImport(file string, ks *keystore.KeyStore, passWord string) string 
 	return account.Address.Hex()
 }
 
-//GenPrivKey returns a privateKey and corresponding account,Preparing for transfer
+//GenPrivKey returns a privateKey and corresponding account,preparing for transfer
 func GenPrivKey() (string, string) {
 	privateKeyECDSA, err := ecdsa.GenerateKey(crypto.S256(), crand.Reader)
 	if err != nil {
@@ -168,10 +168,11 @@ func CreateTransaction(privateKey, fromAddress, toAddress, data string, value in
 
 //Ordinary is an ordinary transfer
 func Ordinary(privKeyFile, password, toAddress string, value int) (string, error) {
-	privateKey, fromAddress, err := KeystoreToPrivateKey2(privKeyFile, password)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	var privateKey, fromAddress string
+	if len(privKeyFile) == 64 {
+		privateKey, fromAddress = privKeyFile, password
+	} else {
+		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
 	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	if err != nil {
@@ -202,10 +203,11 @@ func Ordinary(privKeyFile, password, toAddress string, value int) (string, error
 
 //create a raw transaction
 func NewRawTransaction(privKeyFile, password, toAddress, resourcePayer string, value int) (string, error) {
-	privKey, fromAddress, err := KeystoreToPrivateKey2(privKeyFile, password)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	var privateKey, fromAddress string
+	if len(privKeyFile) == 64 {
+		privateKey, fromAddress = privKeyFile, password
+	} else {
+		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
 	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	if err != nil {
@@ -220,7 +222,7 @@ func NewRawTransaction(privKeyFile, password, toAddress, resourcePayer string, v
 	}
 	data := ""
 	txType = 1
-	tx, err := Client.NewRawTx(chainID, nonce, privKey, toAddress, resourcePayer, amount, data, txType)
+	tx, err := Client.NewRawTx(chainID, nonce, privateKey, toAddress, resourcePayer, amount, data, txType)
 	if err != nil {
 		log.Fatal(err)
 		return "", err
@@ -230,10 +232,11 @@ func NewRawTransaction(privKeyFile, password, toAddress, resourcePayer string, v
 
 //Sign a payment transaction
 func SignPaymentTransaction(rawTxHex string, resPayerPrivFile, password string) (hexutil.Bytes, error) {
-	resourcePayerPriv, _, err := KeystoreToPrivateKey2(resPayerPrivFile, password)
-	if err != nil {
-		log.Fatal(err)
-		return nil, err
+	var resourcePayerPriv string
+	if len(resPayerPrivFile) == 64 {
+		resourcePayerPriv = resPayerPrivFile
+	} else {
+		resourcePayerPriv, _, _ = KeystoreToPrivateKey2(resPayerPrivFile, password)
 	}
 	chainID, err := Client.NetworkID(context.Background())
 	if err != nil {
@@ -258,11 +261,13 @@ func SendRawTransaction(rawTx string) (string, error) {
 
 //Send a mortage Staking,the value must > 1000000
 func Staking(privKeyFile, password string, value int) (string, error) {
-	privateKey, fromAddress, err := KeystoreToPrivateKey2(privKeyFile, password)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	var privateKey, fromAddress string
+	if len(privKeyFile) == 64 {
+		privateKey, fromAddress = privKeyFile, password
+	} else {
+		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
+
 	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	if err != nil {
 		log.Fatal(err)
@@ -291,10 +296,11 @@ func Staking(privKeyFile, password string, value int) (string, error) {
 
 //Initiate Unstaking resource application
 func UnStaking(privKeyFile, password string, value int) (string, error) {
-	privateKey, fromAddress, err := KeystoreToPrivateKey2(privKeyFile, password)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	var privateKey, fromAddress string
+	if len(privKeyFile) == 64 {
+		privateKey, fromAddress = privKeyFile, password
+	} else {
+		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
 	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	if err != nil {
@@ -325,10 +331,11 @@ func UnStaking(privKeyFile, password string, value int) (string, error) {
 //Stake on a regular basis to earn income, the following block heights are optional:
 //days(30、90、180、360、720、1080、1800、3600) * 86400 / 2 (block production interval)
 func TimeLimitedStaking(privKeyFile, password string, value int, data string) (string, error) {
-	privateKey, fromAddress, err := KeystoreToPrivateKey2(privKeyFile, password)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	var privateKey, fromAddress string
+	if len(privKeyFile) == 64 {
+		privateKey, fromAddress = privKeyFile, password
+	} else {
+		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
 	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	if err != nil {
@@ -359,10 +366,11 @@ func TimeLimitedStaking(privKeyFile, password string, value int, data string) (s
 //vote for candidateNodes,auto use all staking in your account,
 // you can vote for at least one node and at most 10 nodes.
 func Vote(privKeyFile, password, toAddress string) (string, error) {
-	privateKey, fromAddress, err := KeystoreToPrivateKey2(privKeyFile, password)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	var privateKey, fromAddress string
+	if len(privKeyFile) == 64 {
+		privateKey, fromAddress = privKeyFile, password
+	} else {
+		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
 	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	if err != nil {
@@ -392,10 +400,11 @@ func Vote(privKeyFile, password, toAddress string) (string, error) {
 
 //Receiving Unstaking amount , delay three days after unstaking of the application
 func Receive(privKeyFile, password string) (string, error) {
-	privateKey, fromAddress, err := KeystoreToPrivateKey2(privKeyFile, password)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	var privateKey, fromAddress string
+	if len(privKeyFile) == 64 {
+		privateKey, fromAddress = privKeyFile, password
+	} else {
+		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
 	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	if err != nil {
@@ -425,12 +434,18 @@ func Receive(privKeyFile, password string) (string, error) {
 
 //When you have a lock record and have voted ,also the last time you received the award is more than seven days,
 //you can send a transaction with the current lock record hash.
-func ReceiveLockedAward(privKeyFile, password string, data []byte) (string, error) {
-	privateKey, fromAddress, err := KeystoreToPrivateKey2(privKeyFile, password)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+func ReceiveLockedAward(privKeyFile, password string) (string, error) {
+	var privateKey, fromAddress string
+	if len(privKeyFile) == 64 {
+		privateKey, fromAddress = privKeyFile, password
+	} else {
+		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
+	accountInfo, err := GetAccountInfo(fromAddress)
+	if err != nil {
+		panic(err)
+	}
+	data := accountInfo.Stakings[0].Hash
 	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	if err != nil {
 		log.Fatal(err)
@@ -446,7 +461,7 @@ func ReceiveLockedAward(privKeyFile, password string, data []byte) (string, erro
 	txType = 8
 	//data := data
 	//data1 := "ReceiveLockedAward:" + data
-	tx, err := Client.NewTransactionForRLA(chainID, nonce, privateKey, fromAddress, amount, data, txType)
+	tx, err := Client.NewTransactionForRLA(chainID, nonce, privateKey, fromAddress, amount, data[:], txType)
 	if err != nil {
 		log.Fatal(err)
 		return "", err
@@ -461,10 +476,11 @@ func ReceiveLockedAward(privKeyFile, password string, data []byte) (string, erro
 //When you have voted and the last time you received the award is more than seven days,
 //you can send the transaction
 func ReceiveVoteAward(privKeyFile, password, toAddress string) (string, error) {
-	privateKey, fromAddress, err := KeystoreToPrivateKey2(privKeyFile, password)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	var privateKey, fromAddress string
+	if len(privKeyFile) == 64 {
+		privateKey, fromAddress = privKeyFile, password
+	} else {
+		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
 	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	if err != nil {
@@ -494,10 +510,11 @@ func ReceiveVoteAward(privKeyFile, password, toAddress string) (string, error) {
 
 //Receive the consumed resources once a day
 func Reset(privKeyFile, password string) (string, error) {
-	privateKey, fromAddress, err := KeystoreToPrivateKey2(privKeyFile, password)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	var privateKey, fromAddress string
+	if len(privKeyFile) == 64 {
+		privateKey, fromAddress = privKeyFile, password
+	} else {
+		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
 	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	if err != nil {
