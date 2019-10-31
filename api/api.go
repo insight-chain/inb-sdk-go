@@ -14,7 +14,7 @@ import (
 	"github.com/insight-chain/inb-go/core/state"
 	"github.com/insight-chain/inb-go/core/types"
 	"github.com/insight-chain/inb-go/crypto"
-	"github.com/insight-chain/inb-go/ethclient"
+	"github.com/insight-chain/inb-sdk-go/ethclient"
 	"github.com/insight-chain/inb-sdk-go/sdk-types"
 	"io/ioutil"
 	"log"
