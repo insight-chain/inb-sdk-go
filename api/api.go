@@ -223,6 +223,8 @@ func NewRawTransaction(toAddress, resourcePayer string, value int, privKeyFile, 
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
 	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
+	fmt.Println("fromAddress:", fromAddress)
+	fmt.Println("nonce:", nonce)
 	if err != nil {
 		log.Fatal(err)
 		return "", err
@@ -599,13 +601,23 @@ func GetBlockTransactions(num int) []string {
 }
 
 //GetTransactionByHash returns transaction details by transction hash
-func GetTransactionByHash(txHash string) (tx *types.Transaction, isPending bool, err error) {
+func GetTransactionByHash(txHash string) (tx *ethclient.RpcTransaction, isPending bool, err error) {
 	tx, isPending, err = Client.TransactionByHash(context.Background(), common.HexToHash(txHash))
 	if err != nil {
 		log.Fatal(err)
 		return nil, false, err
 	}
 	return tx, isPending, nil
+}
+
+//GetTransactionByHash returns transaction details by transction hash
+func GetTransactionReceiptByHash(txHash string) (tx *types.Receipt, err error) {
+	txReceipt, err := Client.TransactionReceipt(context.Background(), common.HexToHash(txHash))
+	if err != nil {
+		log.Fatal(err)
+		return nil, err
+	}
+	return txReceipt, nil
 }
 
 //GetAccountInfo returns account related information
