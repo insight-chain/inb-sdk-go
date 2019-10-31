@@ -14,7 +14,7 @@ import (
 	"github.com/insight-chain/inb-go/core/state"
 	"github.com/insight-chain/inb-go/core/types"
 	"github.com/insight-chain/inb-go/crypto"
-	"github.com/insight-chain/inb-sdk-go/ethclient"
+	"github.com/insight-chain/inb-go/ethclient"
 	"github.com/insight-chain/inb-sdk-go/sdk-types"
 	"io/ioutil"
 	"log"
@@ -111,6 +111,17 @@ func CreateKeystore(filepath string) *keystore.KeyStore {
 	return ks
 }
 
+//Get address by privateKey
+func GetAddrByPrivKey(privKey string) (string, error) {
+	key, err := crypto.HexToECDSA(privKey)
+	if err != nil {
+		log.Fatal(err)
+		return "", err
+	}
+	fromAddress := crypto.PubkeyToAddress(key.PublicKey).String()
+	return fromAddress, nil
+}
+
 //Create a new Account
 func CreateAccount(ks *keystore.KeyStore, passWord string) string {
 	account2, err := ks.NewAccount(passWord)
@@ -167,10 +178,11 @@ func CreateTransaction(privateKey, fromAddress, toAddress, data string, value in
 }
 
 //Ordinary is an ordinary transfer
-func Ordinary(privKeyFile, password, toAddress string, value int) (string, error) {
+func Ordinary(toAddress string, value int, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
-	if len(privKeyFile) == 64 {
-		privateKey, fromAddress = privKeyFile, password
+	if privKey != "" {
+		privateKey = privKey
+		fromAddress, _ = GetAddrByPrivKey(privKey)
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
@@ -202,10 +214,11 @@ func Ordinary(privKeyFile, password, toAddress string, value int) (string, error
 }
 
 //create a raw transaction
-func NewRawTransaction(privKeyFile, password, toAddress, resourcePayer string, value int) (string, error) {
+func NewRawTransaction(toAddress, resourcePayer string, value int, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
-	if len(privKeyFile) == 64 {
-		privateKey, fromAddress = privKeyFile, password
+	if privKey != "" {
+		privateKey = privKey
+		fromAddress, _ = GetAddrByPrivKey(privKey)
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
@@ -231,13 +244,14 @@ func NewRawTransaction(privKeyFile, password, toAddress, resourcePayer string, v
 }
 
 //Sign a payment transaction
-func SignPaymentTransaction(rawTxHex string, resPayerPrivFile, password string) (hexutil.Bytes, error) {
+func SignPaymentTransaction(rawTxHex string, resPayerPrivFile, password, resPayerPrivKey string) (hexutil.Bytes, error) {
 	var resourcePayerPriv string
-	if len(resPayerPrivFile) == 64 {
-		resourcePayerPriv = resPayerPrivFile
+	if resPayerPrivKey != "" {
+		resourcePayerPriv = resPayerPrivKey
 	} else {
 		resourcePayerPriv, _, _ = KeystoreToPrivateKey2(resPayerPrivFile, password)
 	}
+	fmt.Println("resourcePayerPriv:", resourcePayerPriv)
 	chainID, err := Client.NetworkID(context.Background())
 	if err != nil {
 		log.Fatal(err)
@@ -260,10 +274,11 @@ func SendRawTransaction(rawTx string) (string, error) {
 }
 
 //Send a mortage Staking,the value must > 1000000
-func Staking(privKeyFile, password string, value int) (string, error) {
+func Staking(value int, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
-	if len(privKeyFile) == 64 {
-		privateKey, fromAddress = privKeyFile, password
+	if privKey != "" {
+		privateKey = privKey
+		fromAddress, _ = GetAddrByPrivKey(privKey)
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
@@ -295,10 +310,11 @@ func Staking(privKeyFile, password string, value int) (string, error) {
 }
 
 //Initiate Unstaking resource application
-func UnStaking(privKeyFile, password string, value int) (string, error) {
+func UnStaking(value int, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
-	if len(privKeyFile) == 64 {
-		privateKey, fromAddress = privKeyFile, password
+	if privKey != "" {
+		privateKey = privKey
+		fromAddress, _ = GetAddrByPrivKey(privKey)
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
@@ -330,10 +346,11 @@ func UnStaking(privKeyFile, password string, value int) (string, error) {
 
 //Stake on a regular basis to earn income, the following block heights are optional:
 //days(30、90、180、360、720、1080、1800、3600) * 86400 / 2 (block production interval)
-func TimeLimitedStaking(privKeyFile, password string, value int, data string) (string, error) {
+func TimeLimitedStaking(value int, data string, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
-	if len(privKeyFile) == 64 {
-		privateKey, fromAddress = privKeyFile, password
+	if privKey != "" {
+		privateKey = privKey
+		fromAddress, _ = GetAddrByPrivKey(privKey)
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
@@ -365,10 +382,11 @@ func TimeLimitedStaking(privKeyFile, password string, value int, data string) (s
 
 //vote for candidateNodes,auto use all staking in your account,
 // you can vote for at least one node and at most 10 nodes.
-func Vote(privKeyFile, password, toAddress string) (string, error) {
+func Vote(toAddress string, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
-	if len(privKeyFile) == 64 {
-		privateKey, fromAddress = privKeyFile, password
+	if privKey != "" {
+		privateKey = privKey
+		fromAddress, _ = GetAddrByPrivKey(privKey)
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
@@ -399,10 +417,11 @@ func Vote(privKeyFile, password, toAddress string) (string, error) {
 }
 
 //Receiving Unstaking amount , delay three days after unstaking of the application
-func Receive(privKeyFile, password string) (string, error) {
+func Receive(privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
-	if len(privKeyFile) == 64 {
-		privateKey, fromAddress = privKeyFile, password
+	if privKey != "" {
+		privateKey = privKey
+		fromAddress, _ = GetAddrByPrivKey(privKey)
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
@@ -434,10 +453,11 @@ func Receive(privKeyFile, password string) (string, error) {
 
 //When you have a lock record and have voted ,also the last time you received the award is more than seven days,
 //you can send a transaction with the current lock record hash.
-func ReceiveLockedAward(privKeyFile, password string) (string, error) {
+func ReceiveLockedAward(privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
-	if len(privKeyFile) == 64 {
-		privateKey, fromAddress = privKeyFile, password
+	if privKey != "" {
+		privateKey = privKey
+		fromAddress, _ = GetAddrByPrivKey(privKey)
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
@@ -475,10 +495,11 @@ func ReceiveLockedAward(privKeyFile, password string) (string, error) {
 
 //When you have voted and the last time you received the award is more than seven days,
 //you can send the transaction
-func ReceiveVoteAward(privKeyFile, password, toAddress string) (string, error) {
+func ReceiveVoteAward(toAddress string, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
-	if len(privKeyFile) == 64 {
-		privateKey, fromAddress = privKeyFile, password
+	if privKey != "" {
+		privateKey = privKey
+		fromAddress, _ = GetAddrByPrivKey(privKey)
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
@@ -509,10 +530,11 @@ func ReceiveVoteAward(privKeyFile, password, toAddress string) (string, error) {
 }
 
 //Receive the consumed resources once a day
-func Reset(privKeyFile, password string) (string, error) {
+func Reset(privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
-	if len(privKeyFile) == 64 {
-		privateKey, fromAddress = privKeyFile, password
+	if privKey != "" {
+		privateKey = privKey
+		fromAddress, _ = GetAddrByPrivKey(privKey)
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
