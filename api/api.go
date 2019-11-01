@@ -223,8 +223,6 @@ func NewRawTransaction(toAddress, resourcePayer string, value int, privKeyFile, 
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
 	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
-	fmt.Println("fromAddress:", fromAddress)
-	fmt.Println("nonce:", nonce)
 	if err != nil {
 		log.Fatal(err)
 		return "", err
@@ -253,7 +251,6 @@ func SignPaymentTransaction(rawTxHex string, resPayerPrivFile, password, resPaye
 	} else {
 		resourcePayerPriv, _, _ = KeystoreToPrivateKey2(resPayerPrivFile, password)
 	}
-	fmt.Println("resourcePayerPriv:", resourcePayerPriv)
 	chainID, err := Client.NetworkID(context.Background())
 	if err != nil {
 		log.Fatal(err)
