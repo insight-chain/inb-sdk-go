@@ -14,7 +14,7 @@ import (
 	"github.com/insight-chain/inb-go/core/state"
 	"github.com/insight-chain/inb-go/core/types"
 	"github.com/insight-chain/inb-go/crypto"
-	"github.com/insight-chain/inb-sdk-go/ethclient"
+	"github.com/insight-chain/inb-go/ethclient"
 	"github.com/insight-chain/inb-sdk-go/sdk-types"
 	"io/ioutil"
 	"log"
@@ -24,14 +24,14 @@ import (
 	"strings"
 )
 
-var Client *ethclient.Client
-var Conf *sdk_types.Configure
+var Client, _ = ethclient.Dial("http://192.168.1.184:6002")
+
 var txType types.TxType
 
-func init() {
-	Conf = InitConfig()
-	Client = InitClient(Conf.Url)
-}
+/*func init() {
+	//Conf = InitConfig()
+	InitClient("")
+}*/
 
 //get current path
 func CurrentFile() string {
@@ -44,12 +44,20 @@ func CurrentFile() string {
 }
 
 //Initialize client
-func InitClient(url string) *ethclient.Client {
-	Client, err := ethclient.Dial(url)
+//func InitClient(url string) *ethclient.Client {
+//	Client, err := ethclient.Dial(url)
+//	if err != nil {
+//		panic(err)
+//	}
+//	return Client
+//}
+
+func InitClient(url string) {
+	client, err := ethclient.Dial(url)
+	Client = client
 	if err != nil {
 		panic(err)
 	}
-	return Client
 }
 
 //Initialize configuration
@@ -223,6 +231,9 @@ func NewRawTransaction(toAddress, resourcePayer string, value int, privKeyFile, 
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
 	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
+	//nonce = 1
+	fmt.Println("nonce:", nonce)
+
 	if err != nil {
 		log.Fatal(err)
 		return "", err
@@ -251,6 +262,7 @@ func SignPaymentTransaction(rawTxHex string, resPayerPrivFile, password, resPaye
 	} else {
 		resourcePayerPriv, _, _ = KeystoreToPrivateKey2(resPayerPrivFile, password)
 	}
+	fmt.Println("resourcePayerPriv:", resourcePayerPriv)
 	chainID, err := Client.NetworkID(context.Background())
 	if err != nil {
 		log.Fatal(err)
@@ -263,6 +275,7 @@ func SignPaymentTransaction(rawTxHex string, resPayerPrivFile, password, resPaye
 	}
 	return tx.Raw, nil
 }
+
 func SendRawTransaction(rawTx string) (string, error) {
 	txHash, err := Client.SendRawTx(rawTx)
 	if err != nil {
@@ -271,6 +284,10 @@ func SendRawTransaction(rawTx string) (string, error) {
 	}
 	return txHash, nil
 }
+
+/*func SendRawTransaction2(rawTx string) error {
+	return Client.SendRawTx2(context.Background(), rawTx)
+}*/
 
 //Send a mortage Staking,the value must > 1000000
 func Staking(value int, privKeyFile, password, privKey string) (string, error) {
