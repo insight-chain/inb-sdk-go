@@ -94,7 +94,6 @@ func KeystoreToPrivateKey(conf *sdk_types.Configure) (string, string, error) {
 	addr := crypto.PubkeyToAddress(unlockedKey.PrivateKey.PublicKey)
 	return privKey, addr.String(), nil
 }*/
-
 //Get privateKey by parameters
 func KeystoreToPrivateKey2(privateKeyFile, password string) (string, string, error) {
 	keyjson, err := ioutil.ReadFile(privateKeyFile)
@@ -163,6 +162,15 @@ func GenPrivKey() (string, string) {
 	return priv, addr.String()
 }
 
+//Get nonce of Account
+func GetNounce(addr string) uint64 {
+	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(addr), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return nonce
+}
+
 //CreateTransaction returns a transaction type ,preparing for sending
 func CreateTransaction(privateKey, fromAddress, toAddress, data string, value int, txtype types.TxType) (*types.Transaction, error) {
 	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
@@ -186,7 +194,7 @@ func CreateTransaction(privateKey, fromAddress, toAddress, data string, value in
 }
 
 //Ordinary is an ordinary transfer
-func Ordinary(toAddress string, value int, privKeyFile, password, privKey string) (string, error) {
+func Ordinary(nonce uint64, toAddress string, value int, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
 	if privKey != "" {
 		privateKey = privKey
@@ -194,12 +202,9 @@ func Ordinary(toAddress string, value int, privKeyFile, password, privKey string
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
-	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	if nonce == 0 {
+		nonce, _ = Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	}
-
 	amount := big.NewInt(int64(value))
 	chainID, err := Client.NetworkID(context.Background())
 	if err != nil {
@@ -222,7 +227,7 @@ func Ordinary(toAddress string, value int, privKeyFile, password, privKey string
 }
 
 //create a raw transaction
-func NewRawTransaction(toAddress, resourcePayer string, value int, privKeyFile, password, privKey string) (string, error) {
+func NewRawTransaction(nonce uint64, toAddress, resourcePayer string, value int, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
 	if privKey != "" {
 		privateKey = privKey
@@ -230,13 +235,8 @@ func NewRawTransaction(toAddress, resourcePayer string, value int, privKeyFile, 
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
-	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
-	//nonce = 1
-	fmt.Println("nonce:", nonce)
-
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	if nonce == 0 {
+		nonce, _ = Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	}
 	amount := big.NewInt(int64(value))
 	chainID, err := Client.NetworkID(context.Background())
@@ -290,7 +290,7 @@ func SendRawTransaction(rawTx string) (string, error) {
 }*/
 
 //Send a mortage Staking,the value must > 1000000
-func Staking(value int, privKeyFile, password, privKey string) (string, error) {
+func Staking(nonce uint64, value int, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
 	if privKey != "" {
 		privateKey = privKey
@@ -299,10 +299,8 @@ func Staking(value int, privKeyFile, password, privKey string) (string, error) {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
 
-	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	if nonce == 0 {
+		nonce, _ = Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	}
 
 	amount := big.NewInt(int64(value))
@@ -326,7 +324,7 @@ func Staking(value int, privKeyFile, password, privKey string) (string, error) {
 }
 
 //Initiate Unstaking resource application
-func UnStaking(value int, privKeyFile, password, privKey string) (string, error) {
+func UnStaking(nonce uint64, value int, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
 	if privKey != "" {
 		privateKey = privKey
@@ -334,12 +332,9 @@ func UnStaking(value int, privKeyFile, password, privKey string) (string, error)
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
-	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	if nonce == 0 {
+		nonce, _ = Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	}
-
 	amount := big.NewInt(int64(value))
 	chainID, err := Client.NetworkID(context.Background())
 	if err != nil {
@@ -362,7 +357,7 @@ func UnStaking(value int, privKeyFile, password, privKey string) (string, error)
 
 //Stake on a regular basis to earn income, the following block heights are optional:
 //days(30、90、180、360、720、1080、1800、3600) * 86400 / 2 (block production interval)
-func TimeLimitedStaking(value int, data string, privKeyFile, password, privKey string) (string, error) {
+func TimeLimitedStaking(nonce uint64, value int, data string, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
 	if privKey != "" {
 		privateKey = privKey
@@ -370,12 +365,9 @@ func TimeLimitedStaking(value int, data string, privKeyFile, password, privKey s
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
-	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	if nonce == 0 {
+		nonce, _ = Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	}
-
 	amount := big.NewInt(int64(value))
 	chainID, err := Client.NetworkID(context.Background())
 	if err != nil {
@@ -398,7 +390,7 @@ func TimeLimitedStaking(value int, data string, privKeyFile, password, privKey s
 
 //vote for candidateNodes,auto use all staking in your account,
 // you can vote for at least one node and at most 10 nodes.
-func Vote(toAddress string, privKeyFile, password, privKey string) (string, error) {
+func Vote(nonce uint64, toAddress string, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
 	if privKey != "" {
 		privateKey = privKey
@@ -406,10 +398,8 @@ func Vote(toAddress string, privKeyFile, password, privKey string) (string, erro
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
-	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	if nonce == 0 {
+		nonce, _ = Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	}
 	value := 0
 	amount := big.NewInt(int64(value))
@@ -433,7 +423,7 @@ func Vote(toAddress string, privKeyFile, password, privKey string) (string, erro
 }
 
 //Receiving Unstaking amount , delay three days after unstaking of the application
-func Receive(privKeyFile, password, privKey string) (string, error) {
+func Receive(nonce uint64, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
 	if privKey != "" {
 		privateKey = privKey
@@ -441,10 +431,8 @@ func Receive(privKeyFile, password, privKey string) (string, error) {
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
-	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	if nonce == 0 {
+		nonce, _ = Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	}
 	value := 0
 	amount := big.NewInt(int64(value))
@@ -469,7 +457,7 @@ func Receive(privKeyFile, password, privKey string) (string, error) {
 
 //When you have a lock record and have voted ,also the last time you received the award is more than seven days,
 //you can send a transaction with the current lock record hash.
-func ReceiveLockedAward(privKeyFile, password, privKey string) (string, error) {
+func ReceiveLockedAward(nonce uint64, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
 	if privKey != "" {
 		privateKey = privKey
@@ -482,10 +470,8 @@ func ReceiveLockedAward(privKeyFile, password, privKey string) (string, error) {
 		panic(err)
 	}
 	data := accountInfo.Stakings[0].Hash
-	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	if nonce == 0 {
+		nonce, _ = Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	}
 	value := 0
 	amount := big.NewInt(int64(value))
@@ -511,7 +497,7 @@ func ReceiveLockedAward(privKeyFile, password, privKey string) (string, error) {
 
 //When you have voted and the last time you received the award is more than seven days,
 //you can send the transaction
-func ReceiveVoteAward(toAddress string, privKeyFile, password, privKey string) (string, error) {
+func ReceiveVoteAward(nonce uint64, toAddress string, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
 	if privKey != "" {
 		privateKey = privKey
@@ -519,10 +505,8 @@ func ReceiveVoteAward(toAddress string, privKeyFile, password, privKey string) (
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
-	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	if nonce == 0 {
+		nonce, _ = Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	}
 	value := 0
 	amount := big.NewInt(int64(value))
@@ -546,7 +530,7 @@ func ReceiveVoteAward(toAddress string, privKeyFile, password, privKey string) (
 }
 
 //Receive the consumed resources once a day
-func Reset(privKeyFile, password, privKey string) (string, error) {
+func Reset(nonce uint64, privKeyFile, password, privKey string) (string, error) {
 	var privateKey, fromAddress string
 	if privKey != "" {
 		privateKey = privKey
@@ -554,10 +538,8 @@ func Reset(privKeyFile, password, privKey string) (string, error) {
 	} else {
 		privateKey, fromAddress, _ = KeystoreToPrivateKey2(privKeyFile, password)
 	}
-	nonce, err := Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
-	if err != nil {
-		log.Fatal(err)
-		return "", err
+	if nonce == 0 {
+		nonce, _ = Client.NonceAt(context.Background(), common.HexToAddress(fromAddress), nil)
 	}
 	value := 0
 	amount := big.NewInt(int64(value))
